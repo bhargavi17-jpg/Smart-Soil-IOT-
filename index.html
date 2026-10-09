@@ -464,6 +464,7 @@ void loop() {
     <!-- Client-Side Automation & UI Logic -->
     <script>
         // State variables
+        const BACKEND_URL = "https://smart-soil-backend-ootr.onrender.com";
         let currentMoisture = 42;
         let isPumpActive = false;
         let isAutoMode = true;
@@ -685,6 +686,29 @@ void loop() {
         // Initial render
         updateGauge(currentMoisture);
         renderPumpState();
+        // Fetch live telemetry from Render backend every 5 seconds
+async function fetchLiveData() {
+    try {
+        const response = await fetch(`${BACKEND_URL}/api/telemetry`);
+        if (response.ok) {
+            const data = await response.json();
+            currentMoisture = data.soilMoisturePercent;
+            isPumpActive = data.pumpStatus;
+            isAutoMode = data.autoMode;
+            triggerThreshold = data.moistureThreshold;
+            
+            updateGauge(currentMoisture);
+            renderPumpState();
+            document.getElementById('tempDisplay').innerText = `${data.temperature} °C`;
+            document.getElementById('humidityDisplay').innerText = `${data.humidity}%`;
+            document.getElementById('lastSyncedTime').innerText = data.lastUpdated;
+        }
+    } catch (err) {
+        console.log("Telemetry fetch waiting...", err);
+    }
+}
+setInterval(fetchLiveData, 5000);
+        
     </script>
 </body>
 </html>
